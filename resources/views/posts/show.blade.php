@@ -1,23 +1,23 @@
 @extends('layouts.app')
 
+@section('titulo')
+    Posts
+@endsection
+
 @section('contenido')
     <div class="w-full container flex flex-col lg:flex-row items-center lg:items-start gap-5">
-        <div class="md:w-1/2">
-            <img src="{{ asset('uploads/' . $post->imagen) }}" alt="post_image.{{ $post->titulo }}">
+        <div class="w-full lg:w-1/2">
+            <div class="flex justify-center mb-5">
+                <img src="{{ asset('uploads/' . $post->imagen) }}" class="lg:w-3/4" alt="post_image.{{ $post->titulo }}">
+            </div>
             <div class="p-2 flex space-x-3 justify-between">
-                <div class="flex">
-                    <div class="mr-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" class="w-6 h-6">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-                        </svg>
-                    </div>
-                    0 likes
-                </div>
+                @auth
+                    <livewire:like-post :post="$post" />
+                @endauth
                 <div>
                     <span class="text-gray-600 text-sm font-italic">by</span>
-                    <span class="font-bold">{{ $post->user->username }}</span>
+                    <a href="{{ route('posts.index', ['user' => $post->user]) }}"
+                        class="font-bold">{{ $post->user->username }}</a>
                 </div>
             </div>
             <div class="flex flex-col flex-1 gap-2">
@@ -30,13 +30,24 @@
                     {{ $post->descripcion }}
                 </div>
             </div>
-
+            @auth
+                @if ($post->user_id === auth()->user()->id)
+                    <div class="mt-4 flex justify-end">
+                        @method('DELETE')
+                        @csrf
+                        <form action="{{ route('posts.destroy', ['post' => $post]) }}">
+                            <input type="submit" value="Eliminar publicacion"
+                                class="font-bold p-3 bg-red-500 cursor-pointer rounded-lg text-white">
+                        </form>
+                    </div>
+                @endif
+            @endauth
         </div>
-        <div class="md:w-1/2">
-            <div class="bg-white shadow-sm rounded-xl p-5">
-                <p class="uppercase font-bold text-2xl text-center mb-4">Comentarios</p>
-                @auth
-                    <form action="" class="w-full" novalidate>
+        <div class="w-full lg:w-1/2">
+            @auth
+                <div class="bg-white shadow-sm rounded-xl p-5 mb-4">
+                    <form action="{{ route('comentarios.store', ['post' => $post, 'user' => $user]) }}" class="w-full"
+                        method="POST" novalidate>
                         @csrf
                         <div class="mb-5">
                             <label for="comentario" class="mb-2 block uppercase text-gray-500 font-bold">Agrega un
@@ -56,9 +67,22 @@
                         <input type="submit" value="COMENTAR"
                             class="bg-sky-600 hover:bg-sky-700 transition-colors cursor-pointer font-bold w-full p-3 text-white rounded-lg">
                     </form>
-                @endauth
+                </div>
+            @endauth
+            <div class="bg-white shadow-sm rounded-xl p-5">
+                <p class="uppercase font-bold text-2xl text-center mb-4">Comentarios</p>
+                @if ($post->comentarios->count())
+                    @foreach ($post->comentarios as $comentario)
+                        <div class="py-2 px-4 shadow-sm border-gray-400 border-b mb-2 flex flex-col">
+                            <a href="{{ route('posts.index', ['user' => $comentario->user]) }}">
+                                <p class="font-bold">{{ $comentario->user->username }}</p>
+                            </a>
+                            <p>{{ $comentario->comentario }}</p>
+                            <p class="text-right text-sm text-gray-500">{{ $comentario->created_at->diffForHumans() }}</p>
+                        </div>
+                    @endforeach
+                @endif
             </div>
         </div>
-
     </div>
 @endsection
